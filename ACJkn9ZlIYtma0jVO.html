@@ -1,0 +1,1094 @@
+<!DOCTYPE html><html><head><base href="https://websim.ai/">
+<title>Interactive Guitar Fretboard</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 0;
+    margin: 0;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  #navbar {
+    background-color: #333;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .fretboardContainer {
+    width: calc(100% - 40px);
+    padding: 20px;
+    background-color: #704214;
+    border: 2px solid #4a2c0f;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    position: relative;
+    overflow-x: auto;
+    margin: 20px;
+  }
+  
+  .fretboard {
+    position: relative;
+    width: 1520px;
+    height: 240px;
+    background: linear-gradient(to right, #d2691e, #8b4513);
+    border: 1px solid #4a2c0f;
+  }
+  
+  .string {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #c0c0c0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  
+  .fret {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #c0c0c0;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+  }
+  
+  .note {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    border: 2px solid #333;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .note:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  
+  .scale-note {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .user-note {
+    background-color: #FFA500;
+    color: #333;
+  }
+
+  .root-note {
+    background-color: #FF4136;
+    color: white;
+  }
+
+  .fifth-note {
+    background-color: #0074D9;
+    color: white;
+  }
+  
+  .open-string {
+    left: -12px !important;
+  }
+
+  .out-of-scale-open {
+    background-color: #8B4513;
+    color: white;
+  }
+  
+  .fret-marker {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    opacity: 0.7;
+    transform: translateX(-50%);
+  }
+  
+  .string-name {
+    position: absolute;
+    left: -40px;
+    width: 20px;
+    text-align: right;
+    color: #f0f0f0;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  
+  select, button, input {
+    font-size: 14px;
+    padding: 5px;
+  }
+  
+  button {
+    background-color: #000000;
+    color: white;
+    border: 1px solid white;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  button:hover {
+    background-color: white;
+    color: black;
+  }
+  
+  .diagram-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10px;
+  }
+  
+  .diagram-description {
+    font-size: 14px;
+    color: white;
+    margin-bottom: 15px;
+    line-height: 1.4;
+  }
+
+  .scale-info {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+  }
+
+  #customScaleInput {
+    width: 200px;
+  }
+
+  #stringSelect {
+    width: 200px;
+  }
+
+  .scale-description {
+    font-size: 14px;
+    color: white;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  #startFret, #endFret {
+    width: 50px;
+  }
+
+  .tuning-select {
+    width: 60px;
+  }
+
+  .tritone {
+    background-color: #000000;
+    color: white;
+  }
+
+  .major-third {
+    background-color: #800080;
+    color: white;
+  }
+
+  .minor-third {
+    background-color: #FFFF00;
+    color: black;
+  }
+
+  #tuningControls {
+    margin: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  footer {
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    margin-top: auto;
+  }
+</style>
+</head>
+<body>
+  <div id="navbar">
+    <div id="tuningControls">
+      <select id="tuningPreset" onchange="applyTuningPreset()">
+        <option value="standard">Standard (E A D G B E)</option>
+        <option value="dropD">Drop D (D A D G B E)</option>
+        <option value="openG">Open G (D G D G B D)</option>
+        <option value="openD">Open D (D A D F# A D)</option>
+        <option value="DADGAD">DADGAD (D A D G A D)</option>
+      </select>
+      <select id="string6" class="tuning-select"></select>
+      <select id="string5" class="tuning-select"></select>
+      <select id="string4" class="tuning-select"></select>
+      <select id="string3" class="tuning-select"></select>
+      <select id="string2" class="tuning-select"></select>
+      <select id="string1" class="tuning-select"></select>
+    </div>
+    <div id="controls">
+      <select id="scaleSelect">
+        <option value="">Select a scale or chord</option>
+        <optgroup label="Scales">
+          <option value="major" selected="">Major Scale</option>
+          <option value="minor">Natural Minor Scale</option>
+          <option value="harmonic_minor">Harmonic Minor Scale</option>
+          <option value="melodic_minor">Melodic Minor Scale</option>
+          <option value="pentatonic_major">Major Pentatonic Scale</option>
+          <option value="pentatonic_minor">Minor Pentatonic Scale</option>
+          <option value="blues">Blues Scale</option>
+          <option value="dorian">Dorian Mode</option>
+          <option value="phrygian">Phrygian Mode</option>
+          <option value="lydian">Lydian Mode</option>
+          <option value="mixolydian">Mixolydian Mode</option>
+          <option value="locrian">Locrian Mode</option>
+          <option value="whole_tone">Whole Tone Scale</option>
+          <option value="diminished">Diminished Scale</option>
+        </optgroup>
+        <optgroup label="Intervals">
+          <option value="minor_second">Minor Second</option>
+          <option value="major_second">Major Second</option>
+          <option value="minor_third">Minor Third</option>
+          <option value="major_third">Major Third</option>
+          <option value="perfect_fourth">Perfect Fourth</option>
+          <option value="tritone">Tritone</option>
+          <option value="perfect_fifth">Perfect Fifth</option>
+          <option value="minor_sixth">Minor Sixth</option>
+          <option value="major_sixth">Major Sixth</option>
+          <option value="minor_seventh">Minor Seventh</option>
+          <option value="major_seventh">Major Seventh</option>
+          <option value="octave">Octave</option>
+        </optgroup>
+        <optgroup label="Chords">
+          <option value="major_chord">Major Chord</option>
+          <option value="minor_chord">Minor Chord</option>
+          <option value="dominant_seventh">Dominant 7th</option>
+          <option value="major_seventh">Major 7th</option>
+          <option value="minor_seventh">Minor 7th</option>
+          <option value="diminished">Diminished Chord</option>
+          <option value="augmented">Augmented Chord</option>
+          <option value="sus4">Sus4 Chord</option>
+          <option value="sus2">Sus2 Chord</option>
+          <option value="add9">Add9 Chord</option>
+          <option value="sixth">6th Chord</option>
+          <option value="minor_major_seventh">Minor Major 7th</option>
+        </optgroup>
+      </select>
+      <select id="keySelect">
+        <option value="">Select a key</option>
+        <option value="C" selected="">C</option>
+        <option value="C#">C#</option>
+        <option value="D">D</option>
+        <option value="D#">D#</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="F#">F#</option>
+        <option value="G">G</option>
+        <option value="G#">G#</option>
+        <option value="A">A</option>
+        <option value="A#">A#</option>
+        <option value="B">B</option>
+      </select>
+      <select id="stringSelect">
+        <option value="123456">All Strings</option>
+        <option value="1">String 1 (High E)</option>
+        <option value="2">String 2 (B)</option>
+        <option value="3">String 3 (G)</option>
+        <option value="4">String 4 (D)</option>
+        <option value="5">String 5 (A)</option>
+        <option value="6">String 6 (Low E)</option>
+        <option value="12">Strings 1-2</option>
+        <option value="13">Strings 1-3</option>
+        <option value="14">Strings 1-4</option>
+        <option value="15">Strings 1-5</option>
+        <option value="16">Strings 1-6</option>
+        <option value="23">Strings 2-3</option>
+        <option value="24">Strings 2-4</option>
+        <option value="25">Strings 2-5</option>
+        <option value="26">Strings 2-6</option>
+        <option value="34">Strings 3-4</option>
+        <option value="35">Strings 3-5</option>
+        <option value="36">Strings 3-6</option>
+        <option value="45">Strings 4-5</option>
+        <option value="46">Strings 4-6</option>
+        <option value="56">Strings 5-6</option>
+        <option value="123">Strings 1-2-3</option>
+        <option value="124">Strings 1-2-4</option>
+        <option value="125">Strings 1-2-5</option>
+        <option value="126">Strings 1-2-6</option>
+        <option value="134">Strings 1-3-4</option>
+        <option value="135">Strings 1-3-5</option>
+        <option value="136">Strings 1-3-6</option>
+        <option value="145">Strings 1-4-5</option>
+        <option value="146">Strings 1-4-6</option>
+        <option value="156">Strings 1-5-6</option>
+        <option value="234">Strings 2-3-4</option>
+        <option value="235">Strings 2-3-5</option>
+        <option value="236">Strings 2-3-6</option>
+        <option value="245">Strings 2-4-5</option>
+        <option value="246">Strings 2-4-6</option>
+        <option value="256">Strings 2-5-6</option>
+        <option value="345">Strings 3-4-5</option>
+        <option value="346">Strings 3-4-6</option>
+        <option value="356">Strings 3-5-6</option>
+        <option value="456">Strings 4-5-6</option>
+      </select>
+      <input type="number" id="startFret" min="0" max="19" value="0" placeholder="Start Fret">
+      <input type="number" id="endFret" min="0" max="19" value="19" placeholder="End Fret">
+      <button onclick="toggleIntervalDisplay()">Interval</button>
+      <input type="text" id="customScaleInput" placeholder="Enter custom scale (e.g., 0,2,4,5,7,9,11)">
+      <button onclick="addCustomScale()">Add</button>
+      <select id="woodToneSelect" onchange="changeFretboardColor()">
+        <option value="#704214">Rosewood</option>
+        <option value="#D2691E">Maple</option>
+        <option value="#8B4513">Mahogany</option>
+        <option value="#DEB887">Butterscotch</option>
+        <option value="#A0522D">Walnut</option>
+        <option value="#000000">Black</option>
+        <option value="#FFFFFF">White</option>
+      </select>
+    </div>
+  </div>
+
+  <div>
+  <style>
+    .fretboardContainer {
+      background-color: #FFFFFF;
+      border: 2px solid #CCCCCC;
+    }
+    
+    .diagram-title, .diagram-description, .scale-info, .scale-description {
+      color: #333333;
+    }
+
+    #woodToneSelect {
+      margin-bottom: 10px;
+      padding: 5px;
+      font-size: 14px;
+    }
+  </style>
+  <div class="scale-info"></div>
+  <h2 class="diagram-title">Diagram 1: Selected Strings and Frets</h2>
+  <p class="diagram-description">This diagram shows the selected scale or chord across the chosen strings and frets of the guitar. It provides a focused view of the scale or chord pattern across the selected portion of the fretboard, allowing for a targeted understanding of note relationships and potential playing positions.</p>
+  <div id="fretboard1" class="fretboard" style="margin-left: 40px;">
+<style>
+  /* Existing styles */
+</style>
+</div>
+  <div class="scale-description">
+    <style>
+      /* Existing styles */
+    </style>
+  </div>
+  <script>
+    function changeFretboardColor() {
+      const woodTone = document.getElementById('woodToneSelect').value;
+      const fretboard = document.getElementById('fretboard1');
+      fretboard.style.background = `linear-gradient(to right, ${woodTone}, ${getLighterShade(woodTone)})`;
+    }
+
+    function getLighterShade(color) {
+      const hex = color.replace('#', '');
+      const rgb = parseInt(hex, 16);
+      const r = (rgb >> 16) & 0xff;
+      const g = (rgb >>  8) & 0xff;
+      const b = (rgb >>  0) & 0xff;
+      const lightness = 0.2;
+      const newR = Math.min(Math.round(r + (255 - r) * lightness), 255);
+      const newG = Math.min(Math.round(g + (255 - g) * lightness), 255);
+      const newB = Math.min(Math.round(b + (255 - b) * lightness), 255);
+      return `#${(newR << 16 | newG << 8 | newB).toString(16).padStart(6, '0')}`;
+    }
+
+    // Initialize fretboard color
+    changeFretboardColor();
+  </script>
+</div>
+
+  <footer>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+    <p style="font-size: 0.8em; margin: 0;"></p>
+    <button id="playScaleButton" onclick="playScale()">Play Scale</button>
+    <div class="melodic-pattern-container">
+      <select id="melodicPatternSelect">
+        <option value="ascending">Ascending</option>
+        <option value="descending">Descending</option>
+        <option value="ascendingDescending">Ascending-Descending</option>
+        <option value="zigzag">Zig-Zag</option>
+        <option value="random">Random</option>
+        <option value="thirdIntervals">Third Intervals</option>
+        <option value="fourthIntervals">Fourth Intervals</option>
+        <option value="fifthIntervals">Fifth Intervals</option>
+        <option value="arpeggios">Arpeggios</option>
+        <option value="sequentialThrees">Sequential Threes</option>
+        <option value="sequentialFours">Sequential Fours</option>
+        <option value="pentatonicBox">Pentatonic Box</option>
+        <option value="bluesLick">Blues Lick</option>
+        <option value="jazzChromatic">Jazz Chromatic</option>
+        <option value="sweepPicking">Sweep Picking</option>
+        <option value="triadInversions">Triad Inversions</option>
+        <option value="modalInterchange">Modal Interchange</option>
+        <option value="harmonicSequence">Harmonic Sequence</option>
+        <option value="diminishedArpeggio">Diminished Arpeggio</option>
+        <option value="wholeToneScale">Whole Tone Scale</option>
+        <option value="symmetricalPatterns">Symmetrical Patterns</option>
+        <option value="threeTonePatterns">Three-Tone Patterns</option>
+        <option value="fourTonePatterns">Four-Tone Patterns</option>
+        <option value="alteredScaleLicks">Altered Scale Licks</option>
+        <option value="bebopApproachNotes">Bebop Approach Notes</option>
+      </select>
+      <button id="playMelodicPatternButton" onclick="playMelodicPattern()">Play Melodic Pattern</button>
+    </div>
+    <div class="mp3-player">
+      <input type="file" id="mp3FileInput" accept=".mp3" onchange="handleFileSelect(event)">
+      <audio id="audioPlayer" controls=""></audio>
+    </div>
+    <div class="midi-player">
+      <input type="file" id="midiFileInput" accept=".mid,.midi" onchange="handleMidiFileSelect(event)">
+      <button id="playMidiButton" onclick="playMidi()" disabled="">Play MIDI</button>
+    </div>
+  </div>
+  <div id="melodicPatternDescription" class="pattern-description" style="text-align: center; margin-top: 10px;"></div>
+
+  <script>
+    // Add MIDI.js library
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/midi-player-js@2.0.13/build/index.js';
+    document.head.appendChild(script);
+
+    let midiPlayer;
+    let midiFile;
+
+    function handleMidiFileSelect(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        midiFile = e.target.result;
+        document.getElementById('playMidiButton').disabled = false;
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function playMidi() {
+      if (!midiFile) return;
+
+      if (!midiPlayer) {
+        midiPlayer = new MidiPlayer.Player(function(event) {
+          if (event.name === 'Note on') {
+            // Here you can add logic to highlight the corresponding note on the fretboard
+            console.log('Note on', event.noteName, event.velocity);
+          }
+        });
+      }
+
+      midiPlayer.loadArrayBuffer(midiFile);
+      midiPlayer.play();
+    }
+  </script>
+</footer>
+
+  <script>
+    // ... (The rest of the JavaScript remains the same)
+  </script>
+
+
+  <script>
+    const fretboards = [
+      document.getElementById('fretboard1')
+    ];
+    const scaleSelect = document.getElementById('scaleSelect');
+    const keySelect = document.getElementById('keySelect');
+    const stringSelect = document.getElementById('stringSelect');
+    const startFretInput = document.getElementById('startFret');
+    const endFretInput = document.getElementById('endFret');
+    const containerWidth = fretboards[0].offsetWidth;
+    const containerHeight = fretboards[0].offsetHeight;
+    const stringSpacing = containerHeight / 7;
+    const fretSpacing = containerWidth / 20; // Adjusted for 19 frets
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    let allOpenStrings = ['E', 'A', 'D', 'G', 'B', 'E'];
+    
+    let scales = {
+      major: [0, 2, 4, 5, 7, 9, 11],
+      minor: [0, 2, 3, 5, 7, 8, 10],
+      harmonic_minor: [0, 2, 3, 5, 7, 8, 11],
+      melodic_minor: [0, 2, 3, 5, 7, 9, 11],
+      pentatonic_major: [0, 2, 4, 7, 9],
+      pentatonic_minor: [0, 3, 5, 7, 10],
+      blues: [0, 3, 5, 6, 7, 10],
+      dorian: [0, 2, 3, 5, 7, 9, 10],
+      phrygian: [0, 1, 3, 5, 7, 8, 10],
+      lydian: [0, 2, 4, 6, 7, 9, 11],
+      mixolydian: [0, 2, 4, 5, 7, 9, 10],
+      locrian: [0, 1, 3, 5, 6, 8, 10],
+      whole_tone: [0, 2, 4, 6, 8, 10],
+      diminished: [0, 2, 3, 5, 6, 8, 9, 11],
+      minor_second: [0, 1],
+      major_second: [0, 2],
+      minor_third: [0, 3],
+      major_third: [0, 4],
+      perfect_fourth: [0, 5],
+      tritone: [0, 6],
+      perfect_fifth: [0, 7],
+      minor_sixth: [0, 8],
+      major_sixth: [0, 9],
+      minor_seventh: [0, 10],
+      major_seventh: [0,
+ 11],
+      octave: [0, 12],
+      major_chord: [0, 4, 7],
+      minor_chord: [0, 3, 7],
+      dominant_seventh: [0, 4, 7, 10],
+      major_seventh: [0, 4, 7, 11],
+      minor_seventh: [0, 3, 7, 10],
+      diminished: [0, 3, 6],
+      augmented: [0, 4, 8],
+      sus4: [0, 5, 7],
+      sus2: [0, 2, 7],
+      add9: [0, 4, 7, 14],
+      sixth: [0, 4, 7, 9],
+      minor_major_seventh: [0, 3, 7, 11]
+    };
+    
+    let scaleIntervals = {
+      major: ['1', '2', '3', '4', '5', '6', '7'],
+      minor: ['1', '2', '♭3', '4', '5', '♭6', '♭7'],
+      harmonic_minor: ['1', '2', '♭3', '4', '5', '♭6', '7'],
+      melodic_minor: ['1', '2', '♭3', '4', '5', '6', '7'],
+      pentatonic_major: ['1', '2', '3', '5', '6'],
+      pentatonic_minor: ['1', '♭3', '4', '5', '♭7'],
+      blues: ['1', '♭3', '4', '♭5', '5', '♭7'],
+      dorian: ['1', '2', '♭3', '4', '5', '6', '♭7'],
+      phrygian: ['1', '♭2', '♭3', '4', '5', '♭6', '♭7'],
+      lydian: ['1', '2', '3', '#4', '5', '6', '7'],
+      mixolydian: ['1', '2', '3', '4', '5', '6', '♭7'],
+      locrian: ['1', '♭2', '♭3', '4', '♭5', '♭6', '♭7'],
+      whole_tone: ['1', '2', '3', '#4', '#5', '#6'],
+      diminished: ['1', '2', '♭3', '4', '♭5', '♭6', '6', '7'],
+      minor_second: ['1', '♭2'],
+      major_second: ['1', '2'],
+      minor_third: ['1', '♭3'],
+      major_third: ['1', '3'],
+      perfect_fourth: ['1', '4'],
+      tritone: ['1', '#4'],
+      perfect_fifth: ['1', '5'],
+      minor_sixth: ['1', '♭6'],
+      major_sixth: ['1', '6'],
+      minor_seventh: ['1', '♭7'],
+      major_seventh: ['1', '7'],
+      octave: ['1', '8'],
+      major_chord: ['1', '3', '5'],
+      minor_chord: ['1', '♭3', '5'],
+      dominant_seventh: ['1', '3', '5', '♭7'],
+      major_seventh: ['1', '3', '5', '7'],
+      minor_seventh: ['1', '♭3', '5', '♭7'],
+      diminished: ['1', '♭3', '♭5'],
+      augmented: ['1', '3', '#5'],
+      sus4: ['1', '4', '5'],
+      sus2: ['1', '2', '5'],
+      add9: ['1', '3', '5', '9'],
+      sixth: ['1', '3', '5', '6'],
+      minor_major_seventh: ['1', '♭3', '5', '7']
+    };
+
+    let scaleIntervalsRoman = {
+      major: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'],
+      minor: ['i', 'ii', '♭III', 'iv', 'v', '♭VI', '♭VII'],
+      harmonic_minor: ['i', 'ii', '♭III', 'iv', 'v', '♭VI', 'VII'],
+      melodic_minor: ['i', 'ii', '♭III', 'iv', 'v', 'VI', 'VII'],
+      pentatonic_major: ['I', 'II', 'III', 'V', 'VI'],
+      pentatonic_minor: ['i', '♭III', 'iv', 'v', '♭VII'],
+      blues: ['i', '♭III', 'iv', '♭V', 'v', '♭VII'],
+      dorian: ['i', 'ii', '♭III', 'IV', 'v', 'VI', '♭VII'],
+      phrygian: ['i', '♭II', '♭III', 'iv', 'v', '♭VI', '♭VII'],
+      lydian: ['I', 'II', 'III', '#IV', 'V', 'VI', 'VII'],
+      mixolydian: ['I', 'II', 'III', 'IV', 'V', 'VI', '♭VII'],
+      locrian: ['i', '♭II', '♭III', 'iv', '♭v', '♭VI', '♭VII'],
+      whole_tone: ['I', 'II', 'III', '#IV', '#V', '#VI'],
+      diminished: ['i', 'ii', '♭III', 'iv', '♭v', '♭VI', 'VI', 'VII'],
+      minor_second: ['i', '♭II'],
+      major_second: ['I', 'II'],
+      minor_third: ['i', '♭III'],
+      major_third: ['I', 'III'],
+      perfect_fourth: ['I', 'IV'],
+      tritone: ['I', '#IV'],
+      perfect_fifth: ['I', 'V'],
+      minor_sixth: ['i', '♭VI'],
+      major_sixth: ['I', 'VI'],
+      minor_seventh: ['i', '♭VII'],
+      major_seventh: ['I', 'VII'],
+      octave: ['I', 'VIII'],
+      major_chord: ['I', 'III', 'V'],
+      minor_chord: ['i', '♭III', 'v'],
+      dominant_seventh: ['I', 'III', 'V', '♭VII'],
+      major_seventh: ['I', 'III', 'V', 'VII'],
+      minor_seventh: ['i', '♭III', 'v', '♭VII'],
+      diminished: ['i', '♭III', '♭V'],
+      augmented: ['I', 'III', '#V'],
+      sus4: ['I', 'IV', 'V'],
+      sus2: ['I', 'II', 'V'],
+      add9: ['I', 'III', 'V', 'IX'],
+      sixth: ['I', 'III', 'V', 'VI'],
+      minor_major_seventh: ['i', '♭III', 'v', 'VII']
+    };
+    
+    let showIntervals = 0; // 0: Note names, 1: Intervals, 2: Roman numerals
+    
+    fretboards.forEach((fretboard, index) => {
+      // Create strings
+      for (let i = 0; i < 6; i++) {
+        const string = document.createElement('div');
+        string.className = 'string';
+        string.style.top = `${stringSpacing * (i + 1)}px`;
+        fretboard.appendChild(string);
+
+        const stringName = document.createElement('div');
+        stringName.className = 'string-name';
+        stringName.textContent = allOpenStrings[5 - i];
+        stringName.style.top = `${stringSpacing * (i + 1) - 10}px`;
+        fretboard.parentElement.appendChild(stringName);
+      }
+      
+      // Create frets
+      for (let i = 0; i <= 19; i++) {
+        const fret = document.createElement('div');
+        fret.className = 'fret';
+        fret.style.left = `${i * fretSpacing}px`;
+        fretboard.appendChild(fret);
+      }
+      
+      // Add fret markers
+      [3, 5, 7, 9, 12, 15, 17, 19].forEach(fret => {
+        const marker = document.createElement('div');
+        marker.className = 'fret-marker';
+        marker.style.left = `${(fret - 0.5) * fretSpacing}px`;
+        marker.style.top = '50%';
+        fretboard.appendChild(marker);
+        
+        if (fret === 12) {
+          const secondMarker = marker.cloneNode();
+          secondMarker.style.top = '25%';
+          fretboard.appendChild(secondMarker);
+        }
+      });
+    });
+    
+    function showAllScales() {
+      const scaleType = scaleSelect.value;
+      const key = keySelect.value;
+      const selectedStrings = stringSelect.value.split('').map(Number);
+      const startFret = parseInt(startFretInput.value);
+      const endFret = parseInt(endFretInput.value);
+      
+      if (!scaleType || !key) {
+        alert("Please select both a scale/chord and a key.");
+        return;
+      }
+      
+      if (startFret > endFret) {
+        alert("Start fret cannot be greater than end fret.");
+        return;
+      }
+      
+      clearAllFretboards();
+      
+      fretboards.forEach((fretboard, index) => {
+        showScale(fretboard, index, selectedStrings, startFret, endFret);
+      });
+
+      // Update scale info for each diagram
+      const scaleInfoElements = document.querySelectorAll('.scale-info');
+      scaleInfoElements.forEach(element => {
+        const scaleNotes = getScaleNotes(key, scaleType);
+        const scaleIntervals = getScaleIntervals(scaleType);
+        element.textContent = `${key} ${scaleSelect.options[scaleSelect.selectedIndex].text}: ${scaleNotes.join(', ')} (${scaleIntervals.join(', ')})`;
+      });
+
+      // Update scale description
+      updateScaleDescription(scaleType, key);
+
+      // Highlight intervals
+      highlightIntervals();
+    }
+    
+    function showScale(fretboard, fretboardIndex, selectedStrings, startFret, endFret) {
+      const scaleType = scaleSelect.value;
+      const key = keySelect.value;
+      
+      const keyIndex = notes.indexOf(key);
+      const scaleNotes = scales[scaleType].map(interval => notes[(keyIndex + interval) % 12]);
+      
+      for (let stringIndex = 0; stringIndex < 6; stringIndex++) {
+        if (!selectedStrings.includes(6 - stringIndex)) continue;
+        
+        const openStringNote = allOpenStrings[5 -stringIndex];
+        const openStringIndex = notes.indexOf(openStringNote);
+        
+        // Add open string note if startFret is 0
+        if (startFret === 0) {
+          const openNoteIndex = scaleNotes.indexOf(openStringNote);
+          addNote(fretboard, -1, openStringNote, openNoteIndex !== -1 ? openNoteIndex : null, stringIndex);
+        }
+        
+        for (let fret = startFret; fret <= endFret; fret++) {
+          const noteIndex = (openStringIndex + fret + 1) % 12;
+          const noteName = notes[noteIndex];
+          
+          const scaleNoteIndex = scaleNotes.indexOf(noteName);
+          if (scaleNoteIndex !== -1 || fret === -1) {
+            addNote(fretboard, fret, noteName, scaleNoteIndex, stringIndex);
+          }
+        }
+      }
+    }
+    
+    function addNote(fretboard, fret, noteName, scaleNoteIndex, stringIndex) {
+      const note = document.createElement('div');
+      note.className = 'note';
+      if (scaleNoteIndex !== null) {
+        note.classList.add('scale-note');
+        if (scaleNoteIndex === 0) {
+          note.classList.add('root-note');
+        } else if (scaleNoteIndex === 4) {
+          note.classList.add('fifth-note');
+        } else if (scaleNoteIndex === 3) {
+          note.classList.add('fourth-note');
+        }
+      } else {
+        note.classList.add('user-note');
+      }
+      if (fret === -1) {
+        note.classList.add('open-string');
+        if (scaleNoteIndex === null) {
+          note.classList.add('out-of-scale-open');
+        }
+      }
+      note.style.left = `${(fret + 0.5) * fretSpacing}px`;
+      note.style.top = `${stringSpacing * (stringIndex + 1)}px`;
+      note.textContent = getNoteText(noteName, scaleNoteIndex);
+      note.dataset.noteName = noteName;
+      note.dataset.interval = scaleNoteIndex !== null ? scaleIntervals[scaleSelect.value][scaleNoteIndex] : '';
+      note.dataset.romanInterval = scaleNoteIndex !== null ? scaleIntervalsRoman[scaleSelect.value][scaleNoteIndex] : '';
+      note.onclick = handleNoteClick;
+      note.clickCount = 0;
+      fretboard.appendChild(note);
+    }
+    
+    function getNoteText(noteName, scaleNoteIndex) {
+      if (scaleNoteIndex === null) return noteName;
+      switch (showIntervals) {
+        case 0: return noteName;
+        case 1: return scaleIntervals[scaleSelect.value][scaleNoteIndex];
+        case 2: return scaleIntervalsRoman[scaleSelect.value][scaleNoteIndex];
+      }
+    }
+    
+    function handleNoteClick(event) {
+      const note = event.target;
+      note.clickCount++;
+      
+      if (note.clickCount === 1) {
+        note.classList.toggle('user-note');
+        note.classList.toggle('scale-note');
+        note.classList.remove('root-note');
+        note.classList.remove('fifth-note');
+        note.classList.remove('fourth-note');
+        note.classList.remove('out-of-scale-open');
+      } else if (note.clickCount === 3) {
+        note.remove();
+      }
+      
+      // Reset click count after a short delay
+      setTimeout(() => {
+        note.clickCount = 0;
+      }, 300);
+    }
+    
+    function clearAllFretboards() {
+      fretboards.forEach(fretboard => {
+        const notes = fretboard.querySelectorAll('.note');
+        notes.forEach(note => note.remove());
+      });
+
+      // Clear scale info
+      const scaleInfoElements = document.querySelectorAll('.scale-info');
+      scaleInfoElements.forEach(element => {
+        element.textContent = '';
+      });
+
+      // Clear scale description
+      document.querySelector('.scale-description').textContent = '';
+    }
+    
+    function toggleIntervalDisplay() {
+      showIntervals = (showIntervals + 1) % 3;
+      const notes = document.querySelectorAll('.note');
+      notes.forEach(note => {
+        if (note.classList.contains('scale-note') || note.classList.contains('root-note') || note.classList.contains('fifth-note') || note.classList.contains('fourth-note')) {
+          note.textContent = getNoteText(note.dataset.noteName, scaleIntervals[scaleSelect.value].indexOf(note.dataset.interval));
+        }
+      });
+    }
+    
+    function getScaleNotes(key, scaleType) {
+      const keyIndex = notes.indexOf(key);
+      return scales[scaleType].map(interval => notes[(keyIndex + interval) % 12]);
+    }
+    
+    function getScaleIntervals(scaleType) {
+      return scaleIntervals[scaleType];
+    }
+    
+    function addCustomScale() {
+      const customScaleInput = document.getElementById('customScaleInput');
+      const customScaleName = prompt("Enter a name for your custom scale:");
+      if (!customScaleName) return;
+      
+      const customScaleIntervals = customScaleInput.value.split(',').map(Number);
+      if (customScaleIntervals.some(isNaN)) {
+        alert("Invalid input. Please enter comma-separated numbers.");
+        return;
+      }
+      
+      scales[customScaleName] = customScaleIntervals;
+      scaleIntervals[customScaleName] = customScaleIntervals.map(interval => interval.toString());
+      scaleIntervalsRoman[customScaleName] = customScaleIntervals.map(interval => 'C' + interval.toString());
+      
+      const option = document.createElement('option');
+      option.value = customScaleName;
+      option.textContent = customScaleName;
+      scaleSelect.appendChild(option);
+      scaleSelect.value = customScaleName;
+      
+      customScaleInput.value = '';
+      showAllScales();
+    }
+
+    function updateScaleDescription(scaleType, key) {
+      const descriptionElement = document.querySelector('.scale-description');
+      const descriptions = {
+        major: "The major scale is the foundation of Western music theory, consisting of seven notes with a bright and happy sound.",
+        minor: "The natural minor scale has a darker, more melancholic sound compared to the major scale. It's often used in sad or introspective music.",
+        harmonic_minor: "The harmonic minor scale is similar to the natural minor but with a raised 7th degree, giving it a distinct, exotic flavor often used in classical and metal music.",
+        melodic_minor: "The melodic minor scale has a raised 6th and 7th when ascending, but descends as a natural minor. It's commonly used in jazz improvisation.",
+        pentatonic_major: "The major pentatonic scale is a five-note scale that creates a bright, uplifting sound. It's widely used in folk, rock, and blues music.",
+        pentatonic_minor: "The minor pentatonic scale is a five-note scale with a bluesy, soulful sound. It's a staple in rock, blues, and many other genres.",
+        blues: "The blues scale adds a flatted 5th (blue note) to the minor pentatonic, creating the characteristic 'bluesy' sound central to blues and rock music.",
+        dorian: "The Dorian mode is similar to the natural minor but with a raised 6th, giving it a slightly brighter sound. It's often used in jazz and rock.",
+        phrygian: "The Phrygian mode has a distinctive exotic sound due to its lowered 2nd degree. It's common in flamenco and metal music.",
+        lydian: "The Lydian mode is like a major scale with a raised 4th, giving it a dreamy, floating quality. It's often used in film scores and jazz.",
+        mixolydian: "The Mixolydian mode is similar to the major scale but with a lowered 7th. It has a bluesy quality and is common in rock and jazz.",
+        locrian: "The Locrian mode is the most dissonant of the modes, with a lowered 2nd and 5th. It's rarely used as a central tonality but can add interesting color.",
+        whole_tone: "The whole tone scale is made up entirely of whole steps, creating a dreamy, floating sound without a clear tonal center.",
+        diminished: "The diminished scale alternates half and whole steps, creating a symmetrical pattern used in jazz for its tension-building properties.",
+        minor_second: "The minor second is the smallest interval in Western music, creating a high tension 'rub' often used for dramatic effect.",
+        major_second: "The major second is a whole step interval, forming the basis of many scale patterns and melodic movements.",
+        minor_third: "The minor third is a foundational interval in minor chords and scales, often associated with a sad or melancholic sound.",
+        major_third: "The major third is a key component of major chords and scales, generally perceived as bright and happy.",
+        perfect_fourth: "The perfect fourth is a consonant interval often used in harmony and as the basis for many chord voicings.",
+        tritone: "The tritone, also known as the devil's interval, is highly dissonant and was once forbidden in medieval music. It's now used for its tension-building properties.",
+        perfect_fifth: "The perfect fifth is a highly consonant interval, forming the backbone of many chords and power chords in rock music.",
+        minor_sixth: "The minor sixth has a melancholic quality and is often used in emotional ballads and jazz harmony.",
+        major_sixth: "The major sixth has a sweet, consonant sound and is frequently used in major key melodies and harmonies.",
+        minor_seventh: "The minor seventh is a key component of dominant seventh chords and adds a bluesy quality to melodies.",
+        major_seventh: "The major seventh creates a bright, slightly dissonant sound often used in jazz and sophisticated pop harmonies.",
+        octave: "The octave is the most consonant interval, perceived as the same note at a higher or lower pitch.",
+        major_chord: "The major chord, consisting of a root, major third, and perfect fifth, forms the basis of major key harmony with its bright, stable sound.",
+        minor_chord: "The minor chord, with its root, minor third, and perfect fifth, is the foundation of minor key harmony, often perceived as sad or introspective.",
+        dominant_seventh: "The dominant seventh chord adds tension to the major chord with a minor seventh, often used to create a strong pull towards resolution.",
+        major_seventh: "The major seventh chord adds a major seventh to a major triad, creating a lush, sophisticated sound common in jazz and contemporary pop.",
+        minor_seventh: "The minor seventh chord adds a minor seventh to a minor triad, often used in jazz, funk, and R&B for its smooth, slightly melancholic quality.",
+        diminished: "The diminished chord, built of two stacked minor thirds, has an unstable, tense quality often used for dramatic effect or as a passing chord.",
+        augmented: "The augmented chord, with its two major thirds, has an unsettled, brightening quality often used for color or to create tension.",
+        sus4: "The sus4 chord replaces the third with a perfect fourth, creating an open, ambiguous sound often used as a passing chord or for added color.",
+        sus2: "The sus2 chord replaces the third with a major second, resulting in an open, bright sound often used in rock and pop for its ringing quality.",
+        add9: "The add9 chord adds a major ninth to a triad without the seventh, creating a bright, open sound popular in contemporary pop and jazz.",
+        sixth: "The sixth chord adds a major sixth to a triad, creating a sweet, stable sound often used as a tonic substitute in jazz.",
+        minor_major_seventh: "The minor-major seventh chord combines a minor triad with a major seventh, creating a complex, bittersweet sound often used in jazz and film scores."
+      };
+
+      const description = descriptions[scaleType] || "No description available for this scale or chord.";
+      descriptionElement.textContent = `${key} ${scaleSelect.options[scaleSelect.selectedIndex].text}: ${description}`;
+    }
+
+    // Add click event listener to the fretboards
+    fretboards.forEach((fretboard, fretboardIndex) => {
+      fretboard.addEventListener('click', (event) => {
+        if (event.target === fretboard) {
+          const rect = fretboard.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+          
+          const fret = Math.floor(x / fretSpacing);
+          const stringIndex = Math.floor(y / stringSpacing) - 1;
+          
+          if (fret >= 0 && fret < 20 && stringIndex >= 0 && stringIndex < 6) {
+            const openStringNote = allOpenStrings[5 - stringIndex];
+            const openStringIndex = notes.indexOf(openStringNote);
+            const noteIndex = (openStringIndex + fret + 1) % 12;
+            const noteName = notes[noteIndex];
+            
+            addNote(fretboard, fret, noteName, null, stringIndex);
+          }
+        }
+      });
+    });
+
+    // Show scale when selected
+    scaleSelect.addEventListener('change', showAllScales);
+    keySelect.addEventListener('change', showAllScales);
+    stringSelect.addEventListener('change', showAllScales);
+    startFretInput.addEventListener('change', showAllScales);
+    endFretInput.addEventListener('change', showAllScales);
+
+    // Show C Major scale by default when the page loads
+    window.onload = function() {
+      showAllScales();
+    };
+
+    // Update diagram title and description when string selection changes
+    function updateDiagramInfo() {
+      const selectedStrings = stringSelect.value.split('').map(Number);
+      const startFret = parseInt(startFretInput.value);
+      const endFret = parseInt(endFretInput.value);
+      const diagramTitle = document.querySelector('.diagram-title');
+      const diagramDescription = document.querySelector('.diagram-description');
+
+      let stringNames = selectedStrings.map(string => {
+        switch(string) {
+          case 1: return 'High E';
+          case 2: return 'B';
+          case 3: return 'G';
+          case 4: return 'D';
+          case 5: return 'A';
+          case 6: return 'Low E';
+        }
+      });
+
+      diagramTitle.textContent = `Diagram 1: Strings ${stringNames.join(', ')} - Frets ${startFret}-${endFret}`;
+      diagramDescription.textContent = `This diagram shows the selected scale or chord across strings ${stringNames.join(', ')} and frets ${startFret}-${endFret} of the guitar. It provides a focused view of the scale or chord pattern across the selected portion of the fretboard, allowing for a targeted understanding of note relationships and potential playing positions.`;
+
+      showAllScales();
+    }
+
+    stringSelect.addEventListener('change', updateDiagramInfo);
+    startFretInput.addEventListener('change', updateDiagramInfo);
+    endFretInput.addEventListener('change', updateDiagramInfo);
+
+    // Initialize tuning dropdowns
+    const tuningSelects = document.querySelectorAll('.tuning-select');
+    tuningSelects.forEach((select, index) => {
+      notes.forEach(note => {
+        const option = document.createElement('option');
+        option.value = note;
+        option.textContent = note;
+        select.appendChild(option);
+      });
+      select.value = allOpenStrings[5 - index];
+      select.addEventListener('change', updateTuning);
+    });
+
+    function updateTuning() {
+      allOpenStrings = Array.from(tuningSelects).map(select => select.value).reverse();
+      updateStringNames();
+      showAllScales();
+    }
+
+    function updateStringNames() {
+      const stringNames = document.querySelectorAll('.string-name');
+      stringNames.forEach((stringName, index) => {
+        stringName.textContent = allOpenStrings[5 - index];
+      });
+    }
+
+    function applyTuningPreset() {
+      const preset = document.getElementById('tuningPreset').value;
+      let newTuning;
+
+      switch (preset) {
+        case 'standard':
+          newTuning = ['E', 'A', 'D', 'G', 'B', 'E'];
+          break;
+        case 'dropD':
+          newTuning = ['D', 'A', 'D', 'G', 'B', 'E'];
+          break;
+        case 'openG':
+          newTuning = ['D', 'G', 'D', 'G', 'B', 'D'];
+          break;
+        case 'openD':
+          newTuning = ['D', 'A', 'D', 'F#', 'A', 'D'];
+          break;
+        case 'DADGAD':
+          newTuning = ['D', 'A', 'D', 'G', 'A', 'D'];
+          break;
+      }
+
+      tuningSelects.forEach((select, index) => {
+        select.value = newTuning[5 - index];
+      });
+
+      updateTuning();
+    }
+
+    function highlightIntervals() {
+      const fretboard = document.getElementById('fretboard1');
+      const notes = fretboard.querySelectorAll('.note');
+      const rootNote = fretboard.querySelector('.root-note');
+      
+      if (!rootNote) return;
+      
+      const rootNoteIndex = notes.indexOf(rootNote);
+      const rootNoteName = rootNote.dataset.noteName;
+      
+      notes.forEach(note => {
+        const interval = (notes.indexOf(note) - rootNoteIndex + 12) % 12;
+        const noteName = note.dataset.noteName;
+        
+        // Highlight tritones
+        if (interval === 6) {
+          note.classList.add('tritone');
+        }
+        
+        // Highlight major thirds
+        if (interval === 4) {
+          note.classList.add('major-third');
+        }
+        
+        // Highlight minor thirds
+        if (interval === 3) {
+          note.classList.add('minor-third');
+        }
+      });
+    }
+
+    // Call highlightIntervals after showing the scale
+    const originalShowAllScales = showAllScales;
+    showAllScales = function() {
+      originalShowAllScales();
+      highlightIntervals();
+    };
+
+    // Initialize the fretboard
+    showAllScales();
+  </script>
+</body></html>
